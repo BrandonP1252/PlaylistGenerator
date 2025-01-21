@@ -49,24 +49,18 @@ def get_uri_list():
         return redirect(url_for("main.login"))
 
     sp = spotipy.Spotify(auth=token_info["access_token"])
-    song_artist_list = []
-    playlist_generated_names = generate_playlist(["pop", "rap"], 10)
-    for song in playlist_generated_names:
-        song_artist_list.append(song["song_name"] + " " + song["artist_name"])
-
-    result_list = []
-    for item in song_artist_list:
-        result = sp.search(q=item, type='track', limit=1, market=None)
-        result_list.append(result)
+    playlist_generated_names = generate_playlist(["Bad Bunny"], 20)
 
     uri_list = []
-    for item in result_list:
-        uri_list.append(item["tracks"]["items"][0]["uri"])
+    for song in playlist_generated_names:
+        song_name = song["song_name"] + " " + song["artist_name"]
+        song_search = sp.search(q=song_name, type='track', limit=1, market=None)
+        uri_list.append(song_search["tracks"]["items"][0]["uri"])
 
     return uri_list
 
 # Creates a playlist and adds it to your Spotify account
-def create_playlist():
+def create_playlist(name):
     try:
         token_info = get_token()
     except():
@@ -74,8 +68,8 @@ def create_playlist():
         return redirect(url_for("main.login"))
 
     sp = spotipy.Spotify(auth=token_info["access_token"])
-    playlist = sp.user_playlist_create(get_user_id(), "Test Playlist", public=False, collaborative=False)
-    return playlist
+    playlist = sp.user_playlist_create(get_user_id(), name, public=False, collaborative=False)
+    return playlist["id"]
 
 # Returns the id of the user
 def get_user_id():
@@ -88,3 +82,13 @@ def get_user_id():
     sp = spotipy.Spotify(auth=token_info["access_token"])
     return sp.current_user()["id"]
 
+def add_songs_to_playlist(playlist_id, uri_list):
+    try:
+        token_info = get_token()
+    except():
+        print("User is not logged in")
+        return redirect(url_for("main.login"))
+
+    sp = spotipy.Spotify(auth=token_info["access_token"])
+    sp.playlist_add_items(playlist_id, uri_list, position=None)
+    return playlist_id
